@@ -135,35 +135,40 @@
     color:#4A4A3D;
   }
 
-  /* Silhouette */
-  .diagram-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:14px;
-    padding:14px 8px 6px;
-    margin-bottom:18px;
-    box-shadow:var(--paper-shadow);
+  .sync-banner{
+    margin-top:16px;
+    padding:14px 14px 13px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    transition:background 0.2s ease, border-color 0.2s ease;
   }
-  .diagram-title{
-    font-size:12px;
-    text-transform:uppercase;
-    letter-spacing:0.08em;
-    color:var(--moss);
-    font-weight:600;
-    padding:0 10px 8px;
-  }
-  svg#buffalo{width:100%;height:auto;display:block;}
-  .landmark-dot{
-    cursor:pointer;
-    transition:r 0.15s ease;
-  }
-  .landmark-dot:hover{ r:9; }
-  .landmark-label-text{
+  .sync-banner-label{
     font-family:'IBM Plex Mono',monospace;
-    font-size:9px;
-    fill:var(--ink);
-    pointer-events:none;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:#8A8265;
+    margin-bottom:5px;
   }
+  .sync-banner-call{
+    font-family:'Roboto Slab',serif;
+    font-weight:700;
+    font-size:16px;
+    margin-bottom:5px;
+    color:#B7AF8F;
+  }
+  .sync-banner-reason{
+    font-size:12.5px;
+    line-height:1.5;
+    color:#5C5A48;
+  }
+  .sync-banner.go{ background:#EEF1E7; border-color:var(--moss); }
+  .sync-banner.go .sync-banner-call{ color:var(--moss); }
+  .sync-banner.caution{ background:#FBF3E1; border-color:var(--brass); }
+  .sync-banner.caution .sync-banner-call{ color:var(--hide-dark); }
+  .sync-banner.no-go{ background:#F6E9E3; border-color:var(--rust); }
+  .sync-banner.no-go .sync-banner-call{ color:var(--rust); }
 
   /* Landmark cards */
   .landmark-card{
@@ -175,10 +180,6 @@
     box-shadow:var(--paper-shadow);
     scroll-margin-top:180px;
     transition:border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-  .landmark-card.active-highlight{
-    border-color:var(--hide);
-    box-shadow:0 0 0 2px rgba(122,74,43,0.15);
   }
   .landmark-head{
     display:flex;
@@ -277,7 +278,7 @@
 <header>
   <div class="eyebrow">Field Guide · 1–5 Scale</div>
   <h1>Buffalo BCS</h1>
-  <p>Tap each landmark on the diagram or scroll below. Assess by eye and by hand — fat cover is felt, not just seen.</p>
+  <p>Tap each landmark on the diagram or scroll below, then check the synchronization readiness call at the top.</p>
 </header>
 
 <div class="wrap">
@@ -295,59 +296,14 @@
     </div>
     <div class="gauge-ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
     <div class="gauge-desc" id="gaugeDesc">Emaciated · thin · moderate · good · fat — assessed across tailhead, hooks, pins, short ribs and spine.</div>
+
+    <div class="sync-banner" id="syncBanner">
+      <div class="sync-banner-label" id="syncLabel">Synchronization Readiness</div>
+      <div class="sync-banner-call" id="syncCall">Score all five landmarks to get a call</div>
+      <div class="sync-banner-reason" id="syncReason"></div>
+    </div>
   </div>
 
-  <div class="diagram-card">
-    <div class="diagram-title">Assessment Landmarks</div>
-    <svg id="buffalo" viewBox="0 0 400 230" xmlns="http://www.w3.org/2000/svg">
-      <!-- Buffalo silhouette (stylized side profile) -->
-      <g>
-        <path d="M 40 150
-                 C 30 145, 28 130, 38 122
-                 C 45 108, 60 100, 62 88
-                 C 58 78, 62 66, 74 62
-                 C 82 58, 90 64, 92 72
-                 C 100 66, 112 68, 116 78
-                 C 120 70, 128 72, 130 80
-                 C 150 82, 160 92, 165 100
-                 C 210 92, 270 92, 305 100
-                 C 325 103, 340 112, 348 122
-                 C 356 126, 360 134, 356 142
-                 C 370 145, 375 152, 372 158
-                 L 368 160
-                 C 362 156, 355 156, 350 160
-                 L 344 190 L 330 190 L 326 164
-                 C 300 168, 260 170, 220 169
-                 L 214 190 L 200 190 L 198 168
-                 C 160 166, 130 160, 108 152
-                 L 100 190 L 86 190 L 86 148
-                 C 70 148, 54 150, 44 156
-                 Z" fill="var(--ink)" opacity="0.88"/>
-        <!-- horns -->
-        <path d="M 78 64 C 66 50, 50 46, 40 52 C 52 54, 62 60, 70 70" fill="none" stroke="var(--ink)" stroke-width="5" stroke-linecap="round" opacity="0.88"/>
-        <path d="M 96 66 C 100 48, 112 36, 126 34 C 116 42, 108 52, 104 66" fill="none" stroke="var(--ink)" stroke-width="5" stroke-linecap="round" opacity="0.88"/>
-        <!-- tail -->
-        <path d="M 350 128 C 360 140, 362 155, 358 168" fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
-      </g>
-
-      <!-- Landmark markers -->
-      <g id="marker-spine">
-        <circle class="landmark-dot" data-id="spine" cx="230" cy="90" r="7" fill="var(--brass)" stroke="#fff" stroke-width="2"/>
-      </g>
-      <g id="marker-ribs">
-        <circle class="landmark-dot" data-id="ribs" cx="290" cy="98" r="7" fill="var(--brass)" stroke="#fff" stroke-width="2"/>
-      </g>
-      <g id="marker-hooks">
-        <circle class="landmark-dot" data-id="hooks" cx="330" cy="108" r="7" fill="var(--brass)" stroke="#fff" stroke-width="2"/>
-      </g>
-      <g id="marker-pins">
-        <circle class="landmark-dot" data-id="pins" cx="340" cy="128" r="7" fill="var(--brass)" stroke="#fff" stroke-width="2"/>
-      </g>
-      <g id="marker-tailhead">
-        <circle class="landmark-dot" data-id="tailhead" cx="352" cy="118" r="7" fill="var(--brass)" stroke="#fff" stroke-width="2"/>
-      </g>
-    </svg>
-  </div>
 
   <div id="landmarkCards"></div>
 
@@ -356,7 +312,7 @@
   </div>
 
   <div class="disclaimer">
-    Adapted from the 5-point dairy-cattle BCS system for field use in water buffalo. Fat distribution varies by breed (Murrah, Nili-Ravi, Mediterranean, and others) — use alongside local veterinary guidance, not as a diagnosis.
+    Adapted from the 5-point dairy-cattle BCS system for field use in water buffalo. Fat distribution varies by breed (Murrah, Nili-Ravi, Mediterranean, and others). The synchronization call is BCS-based only — combine with cyclicity status, days postpartum, and reproductive exam findings before enrolling an animal in a protocol.
   </div>
 
 </div>
@@ -511,6 +467,8 @@ function updateGauge() {
   const pct = ((rounded - 1) / 4) * 100;
   marker.style.left = pct + '%';
   marker.style.opacity = '1';
+
+  updateSyncBanner(rounded, scored.length);
 }
 
 function verdictFor(score) {
@@ -519,6 +477,61 @@ function verdictFor(score) {
   if (score < 3.875) return ['Moderate — typical for lactating animals', 'var(--moss)'];
   if (score < 4.875) return ['Good — suited to dry / late-gestation animals', 'var(--hide)'];
   return ['Fat — reduce energy intake, watch for calving risk', 'var(--hide-dark)'];
+}
+
+function syncRecommendation(score) {
+  if (score < 2.375) {
+    return {
+      status: 'no-go',
+      call: 'Hold — improve condition before enrolling',
+      reason: 'BCS below ~2.5 is linked to delayed resumption of cyclicity, poor follicular growth and weak estrus expression. Response rates to synchronization protocols in thin animals tend to be low. Build condition for 3–4 weeks and re-score before starting a protocol.'
+    };
+  }
+  if (score < 2.875) {
+    return {
+      status: 'caution',
+      call: 'Borderline — proceed with caution',
+      reason: 'BCS is on the low side of the ideal range. Follicular development and estrus response may be inconsistent. If time allows, improving nutrition for a few weeks first will likely improve conception rates; otherwise proceed but flag as a higher-risk candidate.'
+    };
+  }
+  if (score <= 3.875) {
+    return {
+      status: 'go',
+      call: 'Good candidate — proceed with protocol',
+      reason: 'This BCS range is generally associated with normal cyclicity, healthy follicular waves and good estrus expression — the target zone for most fixed-time AI or synchronization programs, assuming the animal is otherwise cycling and postpartum interval is adequate.'
+    };
+  }
+  if (score <= 4.625) {
+    return {
+      status: 'caution',
+      call: 'Acceptable — monitor metabolic status',
+      reason: 'Slightly over-conditioned. Usually still compatible with synchronization, but watch for negative energy balance around calving/early lactation and any signs of metabolic stress, which can blunt response.'
+    };
+  }
+  return {
+    status: 'no-go',
+    call: 'Hold — reduce condition before enrolling',
+    reason: 'Over-conditioned animals are more prone to reduced follicular quality, silent heat, anovulation and calving difficulty. Address energy intake first, then re-score before enrolling in a synchronization protocol.'
+  };
+}
+
+function updateSyncBanner(score, scoredCount) {
+  const banner = document.getElementById('syncBanner');
+  const callEl = document.getElementById('syncCall');
+  const reasonEl = document.getElementById('syncReason');
+
+  banner.classList.remove('go', 'caution', 'no-go');
+
+  if (scoredCount < 5) {
+    callEl.textContent = `Partial read (${scoredCount}/5) — finish scoring for a reliable call`;
+    reasonEl.textContent = 'A synchronization call needs all five landmarks scored, since a partial average can be misleading.';
+    return;
+  }
+
+  const rec = syncRecommendation(score);
+  banner.classList.add(rec.status);
+  callEl.textContent = rec.call;
+  reasonEl.textContent = rec.reason;
 }
 
 document.getElementById('resetBtn').addEventListener('click', () => {
@@ -534,17 +547,11 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     crit.textContent = '';
   });
   updateGauge();
-});
 
-// Tapping a diagram marker scrolls to and highlights its card
-document.querySelectorAll('.landmark-dot').forEach(dot => {
-  dot.addEventListener('click', () => {
-    const id = dot.getAttribute('data-id');
-    const card = document.getElementById('card-' + id);
-    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    card.classList.add('active-highlight');
-    setTimeout(() => card.classList.remove('active-highlight'), 1200);
-  });
+  const banner = document.getElementById('syncBanner');
+  banner.classList.remove('go', 'caution', 'no-go');
+  document.getElementById('syncCall').textContent = 'Score all five landmarks to get a call';
+  document.getElementById('syncReason').textContent = '';
 });
 </script>
 
