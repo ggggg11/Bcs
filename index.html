@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Buffalo BCS — Field Condition Scoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #E9E2CC;
+    --card: #F7F2E4;
+    --ink: #22261F;
+    --hide: #7A4A2B;
+    --hide-dark: #5C3820;
+    --moss: #565F3E;
+    --rust: #9C4222;
+    --brass: #B08D2E;
+    --line: #D9CFAF;
+    --paper-shadow: 0 1px 0 rgba(34,38,31,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:48px;
+  }
+  header{
+    background:var(--ink);
+    color:var(--bg);
+    padding:22px 20px 20px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    box-shadow:0 2px 10px rgba(0,0,0,0.15);
+  }
+  header .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-bottom:4px;
+  }
+  header h1{
+    font-family:'Roboto Slab',serif;
+    font-size:22px;
+    margin:0;
+    font-weight:700;
+    letter-spacing:0.01em;
+  }
+  header p{
+    margin:6px 0 0;
+    font-size:12.5px;
+    color:#C8C2AB;
+    line-height:1.4;
+  }
+
+  .wrap{max-width:520px;margin:0 auto;padding:16px;}
+
+  /* Score gauge card */
+  .gauge-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 18px 16px;
+    margin-bottom:18px;
+    box-shadow:var(--paper-shadow);
+  }
+  .gauge-top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  .gauge-label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--moss);
+    font-weight:600;
+  }
+  .gauge-count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#8A8265;
+  }
+  .gauge-number{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:56px;
+    font-weight:700;
+    line-height:1;
+    margin:8px 0 2px;
+    color:var(--ink);
+  }
+  .gauge-number.pending{color:#B7AF8F;}
+  .gauge-verdict{
+    font-family:'Roboto Slab',serif;
+    font-size:15px;
+    font-weight:700;
+    margin-bottom:12px;
+  }
+  .gauge-bar-track{
+    position:relative;
+    height:14px;
+    border-radius:8px;
+    background:linear-gradient(to right, var(--rust) 0%, #C9A227 50%, var(--moss) 75%, var(--hide) 100%);
+    opacity:0.28;
+  }
+  .gauge-bar-fill-wrap{position:relative;height:14px;margin-top:-14px;}
+  .gauge-marker{
+    position:absolute;
+    top:-5px;
+    width:3px;
+    height:24px;
+    background:var(--ink);
+    border-radius:2px;
+    transform:translateX(-50%);
+    transition:left 0.25s ease;
+  }
+  .gauge-ticks{
+    display:flex;
+    justify-content:space-between;
+    margin-top:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#8A8265;
+  }
+  .gauge-desc{
+    margin-top:10px;
+    font-size:13px;
+    line-height:1.5;
+    color:#4A4A3D;
+  }
+
+  .sync-banner{
+    margin-top:16px;
+    padding:14px 14px 13px;
+    border-radius:10px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    transition:background 0.2s ease, border-color 0.2s ease;
+  }
+  .sync-banner-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:#8A8265;
+    margin-bottom:5px;
+  }
+  .sync-banner-call{
+    font-family:'Roboto Slab',serif;
+    font-weight:700;
+    font-size:16px;
+    margin-bottom:5px;
+    color:#B7AF8F;
+  }
+  .sync-banner-reason{
+    font-size:12.5px;
+    line-height:1.5;
+    color:#5C5A48;
+  }
+  .sync-banner.go{ background:#EEF1E7; border-color:var(--moss); }
+  .sync-banner.go .sync-banner-call{ color:var(--moss); }
+  .sync-banner.caution{ background:#FBF3E1; border-color:var(--brass); }
+  .sync-banner.caution .sync-banner-call{ color:var(--hide-dark); }
+  .sync-banner.no-go{ background:#F6E9E3; border-color:var(--rust); }
+  .sync-banner.no-go .sync-banner-call{ color:var(--rust); }
+
+  /* Landmark cards */
+  .landmark-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:var(--paper-shadow);
+    scroll-margin-top:180px;
+    transition:border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .landmark-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:4px;
+  }
+  .landmark-name{
+    font-family:'Roboto Slab',serif;
+    font-weight:700;
+    font-size:16px;
+  }
+  .landmark-score-chip{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    font-weight:700;
+    color:var(--hide-dark);
+    background:#EDE0CC;
+    border-radius:6px;
+    padding:2px 8px;
+    min-width:20px;
+    text-align:center;
+  }
+  .landmark-score-chip.empty{color:#B7AF8F;background:transparent;border:1px dashed var(--line);}
+  .landmark-desc{
+    font-size:13px;
+    color:#5C5A48;
+    margin-bottom:12px;
+    line-height:1.4;
+  }
+  .score-buttons{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .score-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:15px;
+    padding:9px 0;
+    border-radius:8px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+    transition:all 0.15s ease;
+  }
+  .score-btn:active{transform:scale(0.96);}
+  .score-btn.selected{
+    background:var(--hide);
+    border-color:var(--hide);
+    color:#fff;
+  }
+  .criterion-text{
+    font-size:13px;
+    line-height:1.5;
+    color:var(--ink);
+    background:#EFE7D2;
+    border-left:3px solid var(--hide);
+    padding:10px 12px;
+    border-radius:0 8px 8px 0;
+    display:none;
+  }
+  .criterion-text.show{display:block;}
+
+  .reset-row{
+    display:flex;
+    justify-content:center;
+    margin:20px 0 6px;
+  }
+  .reset-btn{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--rust);
+    background:none;
+    border:1.5px solid var(--rust);
+    border-radius:20px;
+    padding:8px 20px;
+    cursor:pointer;
+  }
+  .reset-btn:active{opacity:0.7;}
+
+  .disclaimer{
+    font-size:11.5px;
+    line-height:1.5;
+    color:#8A8265;
+    text-align:center;
+    padding:14px 24px 0;
+  }
+
+  /* Language selector */
+  .lang-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 16px;
+    margin-bottom:14px;
+    box-shadow:var(--paper-shadow);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .lang-card label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--moss);
+    font-weight:600;
+  }
+  .lang-card select{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    font-weight:700;
+    padding:7px 10px;
+    border-radius:8px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+  }
+
+  /* Animal ID */
+  .id-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:14px;
+    box-shadow:var(--paper-shadow);
+  }
+  .id-card label{
+    display:block;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--moss);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  .id-card .optional{
+    text-transform:none;
+    letter-spacing:0;
+    color:#B7AF8F;
+    font-weight:400;
+  }
+  .id-card input{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:15px;
+    padding:9px 12px;
+    border-radius:8px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+  }
+  .id-card input:focus{
+    outline:none;
+    border-color:var(--hide);
+  }
+
+  /* Save button */
+  .save-btn{
+    width:100%;
+    margin-top:16px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    padding:12px 0;
+    border-radius:10px;
+    border:none;
+    background:var(--hide);
+    color:#fff;
+    cursor:pointer;
+    transition:background 0.15s ease, opacity 0.15s ease;
+  }
+  .save-btn:active{ opacity:0.85; }
+  .save-btn:disabled{
+    background:#D9CFAF;
+    color:#A79E80;
+    cursor:not-allowed;
+  }
+  .save-hint{
+    text-align:center;
+    font-size:11.5px;
+    color:#8A8265;
+    margin-top:7px;
+  }
+
+  /* Records list */
+  .records-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:18px;
+    box-shadow:var(--paper-shadow);
+  }
+  .records-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .records-title{
+    font-family:'Roboto Slab',serif;
+    font-weight:700;
+    font-size:15px;
+  }
+  .clear-all-btn{
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:var(--rust);
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:2px 4px;
+  }
+  .records-empty{
+    font-size:13px;
+    color:#B7AF8F;
+    text-align:center;
+    padding:14px 0;
+  }
+  .records-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .export-btn{
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:var(--hide-dark);
+    background:#EDE0CC;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:7px 13px;
+    cursor:pointer;
+    display:inline-block;
+  }
+  .export-btn:active{ opacity:0.8; }
+  .record-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:10px 0;
+    border-top:1px solid var(--line);
+  }
+  .record-item:first-child{ border-top:none; }
+  .record-main{ flex:1; min-width:0; }
+  .record-id{
+    font-family:'Roboto Slab',serif;
+    font-weight:700;
+    font-size:14px;
+    color:var(--ink);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .record-meta{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#8A8265;
+    margin-top:2px;
+  }
+  .record-score-chip{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:13px;
+    border-radius:6px;
+    padding:4px 9px;
+    white-space:nowrap;
+  }
+  .record-score-chip.go{ background:#EEF1E7; color:var(--moss); }
+  .record-score-chip.caution{ background:#FBF3E1; color:var(--hide-dark); }
+  .record-score-chip.no-go{ background:#F6E9E3; color:var(--rust); }
+  .record-delete{
+    background:none;
+    border:none;
+    color:#B7AF8F;
+    font-size:18px;
+    line-height:1;
+    cursor:pointer;
+    padding:2px 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow" id="eyebrowText">Field Guide · 1–5 Scale</div>
+  <h1>Buffalo BCS</h1>
+  <p id="taglineText">Score each landmark below, then check the synchronization readiness call at the top.</p>
+</header>
+
+<div class="wrap">
+
+  <div class="lang-card">
+    <label for="langSelect" id="languageLabel">Language</label>
+    <select id="langSelect">
+      <option value="en">English</option>
+      <option value="tl">Tagalog</option>
+    </select>
+  </div>
+
+  <div class="id-card">
+    <label for="animalId" id="animalIdLabel">Animal ID / Tag <span class="optional" id="optionalTag">(optional)</span></label>
+    <input type="text" id="animalId" placeholder="e.g. NR-042" autocomplete="off">
+  </div>
+
+  <div class="gauge-card">
+    <div class="gauge-top">
+      <span class="gauge-label" id="gaugeLabel">Overall Score</span>
+      <span class="gauge-count" id="countLabel">0 / 5 assessed</span>
+    </div>
+    <div class="gauge-number pending" id="gaugeNumber">—</div>
+    <div class="gauge-verdict" id="gaugeVerdict" style="color:#B7AF8F;">Score all five landmarks below</div>
+    <div class="gauge-bar-track"></div>
+    <div class="gauge-bar-fill-wrap">
+      <div class="gauge-marker" id="gaugeMarker" style="left:0%; opacity:0;"></div>
+    </div>
+    <div class="gauge-ticks"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+    <div class="gauge-desc" id="gaugeDesc">Emaciated · thin · moderate · good · fat — assessed across tailhead, hooks, pins, short ribs and spine.</div>
+
+    <div class="sync-banner" id="syncBanner">
+      <div class="sync-banner-label" id="syncLabel">Synchronization Readiness</div>
+      <div class="sync-banner-call" id="syncCall">Score all five landmarks to get a call</div>
+      <div class="sync-banner-reason" id="syncReason"></div>
+    </div>
+
+    <button class="save-btn" id="saveBtn" disabled>Save record</button>
+    <div class="save-hint" id="saveHint">Score all five landmarks to enable saving</div>
+  </div>
+
+
+  <div id="landmarkCards"></div>
+
+  <div class="reset-row">
+    <button class="reset-btn" id="resetBtn">Reset all scores</button>
+  </div>
+
+  <div class="records-card">
+    <div class="records-head">
+      <span class="records-title" id="recordsTitle">Saved Records</span>
+      <button class="clear-all-btn" id="clearAllBtn">Clear all</button>
+    </div>
+    <div class="records-actions">
+      <button class="export-btn" id="exportCsvBtn">Export CSV</button>
+      <button class="export-btn" id="exportJsonBtn">Backup (.json)</button>
+      <label class="export-btn" for="importFile" id="restoreLabel">Restore backup</label>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+    </div>
+    <div id="recordsList" class="records-list">
+      <div class="records-empty" id="recordsEmpty">No records saved yet.</div>
+    </div>
+  </div>
+
+  <div class="disclaimer" id="disclaimerText">
+    Adapted from the 5-point dairy-cattle BCS system for field use in water buffalo. Fat distribution varies by breed (Murrah, Nili-Ravi, Mediterranean, and others). The synchronization call is BCS-based only — combine with cyclicity status, days postpartum, and reproductive exam findings before enrolling an animal in a protocol.
+  </div>
+
+</div>
+
+<script>
+const landmarkIds = ['tailhead', 'hooks', 'pins', 'ribs', 'spine'];
+
+const translations = {
+  en: {
+    eyebrow: 'Field Guide · 1–5 Scale',
+    tagline: 'Score each landmark below, then check the synchronization readiness call at the top.',
+    animalIdLabel: 'Animal ID / Tag',
+    optional: '(optional)',
+    animalIdPlaceholder: 'e.g. NR-042',
+    gaugeLabel: 'Overall Score',
+    assessedCount: n => `${n} / 5 assessed`,
+    scoreAllBelow: 'Score all five landmarks below',
+    gaugeDesc: 'Emaciated · thin · moderate · good · fat — assessed across tailhead, hooks, pins, short ribs and spine.',
+    syncLabel: 'Synchronization Readiness',
+    syncDefaultCall: 'Score all five landmarks to get a call',
+    saveRecordBtn: 'Save record',
+    saveHintDisabled: 'Score all five landmarks to enable saving',
+    saveHintReady: 'Ready to save this assessment',
+    resetBtn: 'Reset all scores',
+    savedRecordsTitle: 'Saved Records',
+    clearAll: 'Clear all',
+    exportCsv: 'Export CSV',
+    backupJson: 'Backup (.json)',
+    restoreBackup: 'Restore backup',
+    noRecords: 'No records saved yet.',
+    unnamed: 'Unnamed',
+    disclaimer: 'Adapted from the 5-point dairy-cattle BCS system for field use in water buffalo. Fat distribution varies by breed (Murrah, Nili-Ravi, Mediterranean, and others). The synchronization call is BCS-based only — combine with cyclicity status, days postpartum, and reproductive exam findings before enrolling an animal in a protocol.',
+    partialCall: n => `Partial read (${n}/5) — finish scoring for a reliable call`,
+    partialReason: 'A synchronization call needs all five landmarks scored, since a partial average can be misleading.',
+    clearConfirm: 'Clear all saved records? This cannot be undone.',
+    noExportRecords: 'No records to export yet.',
+    noBackupRecords: 'No records to back up yet.',
+    importSuccess: (added, dup) => `Imported ${added} record(s). ${dup} duplicate(s) skipped.`,
+    importError: "Could not read that file — make sure it's a backup exported from this app.",
+    storageError: 'Could not save — your browser storage may be full or disabled.',
+    landmarks: {
+      tailhead: {
+        name: 'Tailhead',
+        desc: 'The area around the base of the tail, where fat is deposited first.',
+        criteria: {
+          1: 'Deep hollow around the tailhead. Ligaments and pin bones are sharply visible, no fat cover.',
+          2: 'Shallow depression remains. Ligaments visible but softened by a thin layer of fat.',
+          3: 'Rounded contour. Fat is present but the ligament outline is still faintly visible.',
+          4: 'Smooth and well filled. Ligaments are no longer visible, a slight fat patch is present.',
+          5: 'Tailhead is buried in a thick fat pad. The whole area looks swollen and smooth.'
+        }
+      },
+      hooks: {
+        name: 'Hook Bones (Hips)',
+        desc: 'The hip bones felt on either side of the top of the rump.',
+        criteria: {
+          1: 'Hook bones are sharply angular and prominent, easily seen from a distance.',
+          2: 'Hook bones are visible and easily felt, with only a thin fat cover.',
+          3: 'Hook bones are rounded, felt only with light pressure.',
+          4: 'Hook bones are rounded and covered, felt only with firm pressure.',
+          5: 'Hook bones are not detectable at all, buried under a thick fat layer.'
+        }
+      },
+      pins: {
+        name: 'Pin Bones',
+        desc: 'The points of the pelvis felt just below and to the side of the tailhead.',
+        criteria: {
+          1: 'Pin bones are sharply prominent, with a deep cavity around them.',
+          2: 'Pin bones are prominent, cavity is visible but shallow.',
+          3: 'Pin bones are rounded, felt without much pressure.',
+          4: 'Pin bones are barely felt, under a smooth, even fat cover.',
+          5: 'Pin bones cannot be felt at all, completely covered by fat.'
+        }
+      },
+      ribs: {
+        name: 'Short Ribs / Loin',
+        desc: 'The ends of the short ribs, felt along the loin just in front of the hooks.',
+        criteria: {
+          1: 'Individual ribs are clearly visible, with sharp edges felt through the skin.',
+          2: 'Ribs appear as visible ridges, edges still sharp to the touch.',
+          3: 'Ribs are not visible, but individual ends can still be felt with firm pressure.',
+          4: 'Ribs cannot be felt individually — the surface is smooth and rounded.',
+          5: 'Ribs are deeply buried. The loin looks flat and square across the top.'
+        }
+      },
+      spine: {
+        name: 'Spine (Backbone)',
+        desc: 'The line of the backbone running along the top of the loin.',
+        criteria: {
+          1: 'The spine forms a sharp, knife-like ridge along the entire back.',
+          2: 'Individual vertebrae are visible as bumps along the spine.',
+          3: 'The spine is felt as a rounded ridge, vertebrae no longer individually visible.',
+          4: 'The spine is barely felt — the back appears flat and level.',
+          5: 'The spine cannot be felt at all. The back is flat, or even slightly grooved.'
+        }
+      }
+    },
+    verdicts: {
+      emaciated: 'Emaciated — urgent nutritional attention needed',
+      thin: 'Thin — increase plane of nutrition',
+      moderate: 'Moderate — typical for lactating animals',
+      good: 'Good — suited to dry / late-gestation animals',
+      fat: 'Fat — reduce energy intake, watch for calving risk'
+    },
+    sync: {
+      holdThin: {
+        call: 'Hold — improve condition before enrolling',
+        reason: 'BCS below ~2.5 is linked to delayed resumption of cyclicity, poor follicular growth and weak estrus expression. Response rates to synchronization protocols in thin animals tend to be low. Build condition for 3–4 weeks and re-score before starting a protocol.'
+      },
+      cautionThin: {
+        call: 'Borderline — proceed with caution',
+        reason: 'BCS is on the low side of the ideal range. Follicular development and estrus response may be inconsistent. If time allows, improving nutrition for a few weeks first will likely improve conception rates; otherwise proceed but flag as a higher-risk candidate.'
+      },
+      go: {
+        call: 'Good candidate — proceed with protocol',
+        reason: 'This BCS range is generally associated with normal cyclicity, healthy follicular waves and good estrus expression — the target zone for most fixed-time AI or synchronization programs, assuming the animal is otherwise cycling and postpartum interval is adequate.'
+      },
+      cautionFat: {
+        call: 'Acceptable — monitor metabolic status',
+        reason: 'Slightly over-conditioned. Usually still compatible with synchronization, but watch for negative energy balance around calving/early lactation and any signs of metabolic stress, which can blunt response.'
+      },
+      holdFat: {
+        call: 'Hold — reduce condition before enrolling',
+        reason: 'Over-conditioned animals are more prone to reduced follicular quality, silent heat, anovulation and calving difficulty. Address energy intake first, then re-score before enrolling in a synchronization protocol.'
+      }
+    }
+  },
+
+  tl: {
+    eyebrow: 'Gabay sa Larangan · Sukat 1–5',
+    tagline: 'Markahan ang bawat bahagi sa ibaba, pagkatapos tingnan ang hatol sa kahandaan para sa synchronization sa itaas.',
+    animalIdLabel: 'ID / Tag ng Hayop',
+    optional: '(opsyonal)',
+    animalIdPlaceholder: 'hal. NR-042',
+    gaugeLabel: 'Kabuuang Marka',
+    assessedCount: n => `${n} / 5 nasuri`,
+    scoreAllBelow: 'Markahan ang limang bahagi sa ibaba',
+    gaugeDesc: 'Sobrang payat · payat · katamtaman · maganda · mataba — sinusuri sa ugat ng buntot, buto ng balakang, buto ng pelvis, tadyang, at gulugod.',
+    syncLabel: 'Kahandaan para sa Synchronization',
+    syncDefaultCall: 'Markahan ang limang bahagi upang makakuha ng resulta',
+    saveRecordBtn: 'I-save ang tala',
+    saveHintDisabled: 'Markahan ang limang bahagi upang ma-save',
+    saveHintReady: 'Handa nang i-save ang pagsusuring ito',
+    resetBtn: 'I-reset ang lahat ng marka',
+    savedRecordsTitle: 'Mga Naka-save na Tala',
+    clearAll: 'Burahin lahat',
+    exportCsv: 'I-export bilang CSV',
+    backupJson: 'Backup (.json)',
+    restoreBackup: 'Ibalik ang backup',
+    noRecords: 'Wala pang naka-save na tala.',
+    unnamed: 'Walang Pangalan',
+    disclaimer: 'Hinango mula sa 5-puntong sistema ng BCS para sa mga baka, para gamitin sa larangan para sa kalabaw. Naiiba ang taba depende sa lahi (Murrah, Nili-Ravi, Mediterranean, at iba pa). Ang hatol para sa synchronization ay batay lamang sa BCS — isama ang katayuan ng cyclicity, bilang ng araw mula sa panganganak, at resulta ng reproductive exam bago isama ang hayop sa isang protocol.',
+    partialCall: n => `Hindi pa kumpleto (${n}/5) — tapusin ang pagmamarka para sa tamang resulta`,
+    partialReason: 'Kailangan munang mamarkahan ang limang bahagi bago magbigay ng hatol para sa synchronization, dahil maaaring magbigay ng maling akala ang hindi kumpletong average.',
+    clearConfirm: 'Burahin ang lahat ng naka-save na tala? Hindi na ito maibabalik.',
+    noExportRecords: 'Wala pang talang pwedeng i-export.',
+    noBackupRecords: 'Wala pang talang pwedeng i-backup.',
+    importSuccess: (added, dup) => `Na-import ang ${added} na tala. ${dup} duplicate ang na-skip.`,
+    importError: 'Hindi mabasa ang file na iyon — siguraduhing ito ay backup mula sa app na ito.',
+    storageError: 'Hindi ma-save — maaaring puno o naka-disable ang storage ng iyong browser.',
+    landmarks: {
+      tailhead: {
+        name: 'Ugat ng Buntot (Tailhead)',
+        desc: 'Ang bahaging nasa paligid ng ugat ng buntot, kung saan unang naiipon ang taba.',
+        criteria: {
+          1: 'Malalim na guwang sa paligid ng ugat ng buntot. Kitang-kita ang mga litid at buto ng pelvis, walang taba.',
+          2: 'Mababaw na guwang. Nakikita pa rin ang mga litid ngunit may manipis nang taba.',
+          3: 'Bilugan ang hugis. May taba na ngunit bahagyang nakikita pa ang balangkas ng litid.',
+          4: 'Makinis at maganda ang porma. Hindi na nakikita ang mga litid, may bahagyang taba.',
+          5: 'Nalibing sa makapal na taba ang ugat ng buntot. Namamaga at makinis ang buong bahagi.'
+        }
+      },
+      hooks: {
+        name: 'Buto ng Balakang (Hook Bones)',
+        desc: 'Ang mga buto ng balakang na nararamdaman sa magkabilang gilid ng itaas ng puwit.',
+        criteria: {
+          1: 'Matalim at kitang-kita ang mga buto ng balakang, makikita kahit sa malayo.',
+          2: 'Nakikita at madaling madama ang mga buto ng balakang, manipis na taba lamang.',
+          3: 'Bilugan na ang mga buto ng balakang, madama lamang sa magaan na pindot.',
+          4: 'Bilugan at may takip ang mga buto ng balakang, madama lamang sa matinding pindot.',
+          5: 'Hindi na madama ang mga buto ng balakang, nalibing sa makapal na taba.'
+        }
+      },
+      pins: {
+        name: 'Buto ng Pelvis (Pin Bones)',
+        desc: 'Ang mga dulo ng pelvis na nararamdaman sa ibaba at gilid ng ugat ng buntot.',
+        criteria: {
+          1: 'Matalim na kitang-kita ang buto ng pelvis, malalim ang guwang sa paligid.',
+          2: 'Kitang-kita ang buto ng pelvis, mababaw na ang guwang.',
+          3: 'Bilugan na ang buto ng pelvis, madama nang walang gaanong pindot.',
+          4: 'Bahagya na lang madama ang buto ng pelvis, may pantay at makinis na taba.',
+          5: 'Hindi na talaga madama ang buto ng pelvis, natatakpan nang husto ng taba.'
+        }
+      },
+      ribs: {
+        name: 'Maikling Tadyang / Baywang',
+        desc: 'Ang mga dulo ng maikling tadyang na nararamdaman sa baywang, bago ang balakang.',
+        criteria: {
+          1: 'Kitang-kita ang bawat tadyang, matalim ang gilid na madarama sa balat.',
+          2: 'Nakikita ang tadyang bilang mga guhit, matalim pa rin sa pagkapa.',
+          3: 'Hindi na nakikita ang tadyang, ngunit madama pa rin ang bawat dulo sa matinding pindot.',
+          4: 'Hindi na madama ang bawat tadyang nang hiwalay — makinis at bilugan na ang ibabaw.',
+          5: 'Malalim na nakabaon ang tadyang. Patag at parisukat ang porma ng baywang.'
+        }
+      },
+      spine: {
+        name: 'Gulugod (Backbone)',
+        desc: 'Ang linya ng gulugod na dumadaan sa itaas ng baywang.',
+        criteria: {
+          1: 'Matalim at parang talim ang gulugod sa buong likod.',
+          2: 'Nakikita ang bawat butong-gulugod bilang munting umbok.',
+          3: 'Bilugan na ang gulugod kapag hinipo, hindi na hiwalay na nakikita ang bawat buto.',
+          4: 'Bahagya na lang madama ang gulugod — patag na ang tingin ng likod.',
+          5: 'Hindi na talaga madama ang gulugod. Patag o may bahagyang lubak pa nga ang likod.'
+        }
+      }
+    },
+    verdicts: {
+      emaciated: 'Sobrang payat — kailangan ng agarang atensyon sa nutrisyon',
+      thin: 'Payat — dagdagan ang antas ng nutrisyon',
+      moderate: 'Katamtaman — karaniwan para sa mga lactating na hayop',
+      good: 'Maganda — bagay sa mga tuyo / huling yugto ng pagbubuntis',
+      fat: 'Mataba — bawasan ang enerhiyang inaalok, bantayan ang panganib sa panganganak'
+    },
+    sync: {
+      holdThin: {
+        call: 'Hintayin muna — pagbutihin ang kondisyon bago isali',
+        reason: 'Ang BCS na mas mababa sa ~2.5 ay konektado sa naantalang pagbabalik ng cyclicity, mahinang paglaki ng follicle, at mahinang pagpapakita ng heat. Mababa ang tugon sa synchronization protocols ng mga payat na hayop. Painitin muna ang kondisyon sa loob ng 3–4 linggo at markahan ulit bago simulan ang protocol.'
+      },
+      cautionThin: {
+        call: 'Nasa gilid — magpatuloy nang may pag-iingat',
+        reason: 'Bahagyang mababa ang BCS sa ideal na saklaw. Maaaring hindi pare-pareho ang paglaki ng follicle at pagpapakita ng heat. Kung may oras, mas maganda kung pagbubutihin muna ang nutrisyon bago simulan; kung hindi, ituloy pero markahan bilang mas mataas ang panganib.'
+      },
+      go: {
+        call: 'Magandang kandidato — ituloy ang protocol',
+        reason: 'Ang saklaw ng BCS na ito ay karaniwang konektado sa normal na cyclicity, malusog na follicular wave, at magandang pagpapakita ng heat — ang target na saklaw para sa karamihan ng fixed-time AI o synchronization programs, ipagpalagay na regular ang pag-ihi ng hayop at sapat na ang postpartum interval.'
+      },
+      cautionFat: {
+        call: 'Katanggap-tanggap — bantayan ang metabolic status',
+        reason: 'Bahagyang sobra sa taba. Karaniwang tugma pa rin sa synchronization, ngunit bantayan ang negative energy balance sa paligid ng panganganak o unang bahagi ng lactation, at anumang senyales ng metabolic stress na maaaring makaapekto sa tugon.'
+      },
+      holdFat: {
+        call: 'Hintayin muna — bawasan ang kondisyon bago isali',
+        reason: 'Ang mga hayop na sobra-sobra sa taba ay mas madaling magkaroon ng mahinang kalidad ng follicle, tahimik na heat (silent heat), anovulation, at kahirapan sa panganganak. Ayusin muna ang enerhiyang inaalok, pagkatapos ay markahan ulit bago isali sa isang synchronization protocol.'
+      }
+    }
+  }
+};
+
+const LANG_KEY = 'buffaloBCSLang';
+let currentLang = localStorage.getItem(LANG_KEY) || 'en';
+
+const state = {};
+const cardsContainer = document.getElementById('landmarkCards');
+
+function t() {
+  return translations[currentLang];
+}
+
+function buildLandmarkCards() {
+  cardsContainer.innerHTML = '';
+  landmarkIds.forEach(id => {
+    const lm = t().landmarks[id];
+    const card = document.createElement('div');
+    card.className = 'landmark-card';
+    card.id = 'card-' + id;
+
+    card.innerHTML = `
+      <div class="landmark-head">
+        <span class="landmark-name">${lm.name}</span>
+        <span class="landmark-score-chip empty" id="chip-${id}">–</span>
+      </div>
+      <div class="landmark-desc">${lm.desc}</div>
+      <div class="score-buttons" id="buttons-${id}"></div>
+      <div class="criterion-text" id="criterion-${id}"></div>
+    `;
+    cardsContainer.appendChild(card);
+
+    const btnRow = card.querySelector(`#buttons-${id}`);
+    for (let s = 1; s <= 5; s++) {
+      const btn = document.createElement('button');
+      btn.className = 'score-btn';
+      btn.textContent = s;
+      btn.addEventListener('click', () => selectScore(id, s));
+      btnRow.appendChild(btn);
+    }
+
+    // Reapply any existing selection for this landmark (e.g. after a language switch)
+    if (state[id] !== undefined) {
+      const score = state[id];
+      [...btnRow.children].forEach((btn, i) => btn.classList.toggle('selected', i + 1 === score));
+      const chip = document.getElementById('chip-' + id);
+      chip.textContent = score;
+      chip.classList.remove('empty');
+      const crit = document.getElementById('criterion-' + id);
+      crit.textContent = lm.criteria[score];
+      crit.classList.add('show');
+    }
+  });
+}
+
+function selectScore(id, score) {
+  state[id] = score;
+  const lm = t().landmarks[id];
+
+  const btnRow = document.getElementById('buttons-' + id);
+  [...btnRow.children].forEach((btn, i) => {
+    btn.classList.toggle('selected', i + 1 === score);
+  });
+
+  const chip = document.getElementById('chip-' + id);
+  chip.textContent = score;
+  chip.classList.remove('empty');
+
+  const crit = document.getElementById('criterion-' + id);
+  crit.textContent = lm.criteria[score];
+  crit.classList.add('show');
+
+  updateGauge();
+}
+
+function updateGauge() {
+  const scored = landmarkIds.filter(id => state[id] !== undefined);
+  document.getElementById('countLabel').textContent = t().assessedCount(scored.length);
+
+  const saveBtn = document.getElementById('saveBtn');
+  const saveHint = document.getElementById('saveHint');
+  if (scored.length === 5) {
+    saveBtn.disabled = false;
+    saveHint.textContent = t().saveHintReady;
+  } else {
+    saveBtn.disabled = true;
+    saveHint.textContent = t().saveHintDisabled;
+  }
+
+  const numberEl = document.getElementById('gaugeNumber');
+  const verdictEl = document.getElementById('gaugeVerdict');
+  const marker = document.getElementById('gaugeMarker');
+
+  if (scored.length === 0) {
+    numberEl.textContent = '—';
+    numberEl.classList.add('pending');
+    verdictEl.textContent = t().scoreAllBelow;
+    verdictEl.style.color = '#B7AF8F';
+    marker.style.opacity = '0';
+    updateSyncBanner(null, 0);
+    return;
+  }
+
+  const sum = scored.reduce((acc, id) => acc + state[id], 0);
+  const raw = sum / scored.length;
+  const rounded = Math.round(raw * 4) / 4; // nearest 0.25
+
+  numberEl.textContent = rounded.toFixed(2);
+  numberEl.classList.toggle('pending', scored.length < 5);
+
+  const [verdict, color] = verdictFor(rounded);
+  verdictEl.textContent = scored.length < 5 ? verdict + ' (' + (currentLang === 'tl' ? 'hindi kumpleto' : 'partial') + ')' : verdict;
+  verdictEl.style.color = color;
+
+  const pct = ((rounded - 1) / 4) * 100;
+  marker.style.left = pct + '%';
+  marker.style.opacity = '1';
+
+  updateSyncBanner(rounded, scored.length);
+}
+
+function verdictFor(score) {
+  const v = t().verdicts;
+  if (score < 1.875) return [v.emaciated, 'var(--rust)'];
+  if (score < 2.875) return [v.thin, 'var(--rust)'];
+  if (score < 3.875) return [v.moderate, 'var(--moss)'];
+  if (score < 4.875) return [v.good, 'var(--hide)'];
+  return [v.fat, 'var(--hide-dark)'];
+}
+
+function syncRecommendation(score) {
+  const s = t().sync;
+  if (score < 2.375) return { status: 'no-go', ...s.holdThin };
+  if (score < 2.875) return { status: 'caution', ...s.cautionThin };
+  if (score <= 3.875) return { status: 'go', ...s.go };
+  if (score <= 4.625) return { status: 'caution', ...s.cautionFat };
+  return { status: 'no-go', ...s.holdFat };
+}
+
+function updateSyncBanner(score, scoredCount) {
+  const banner = document.getElementById('syncBanner');
+  const callEl = document.getElementById('syncCall');
+  const reasonEl = document.getElementById('syncReason');
+
+  banner.classList.remove('go', 'caution', 'no-go');
+
+  if (scoredCount < 5) {
+    callEl.textContent = scoredCount === 0 ? t().syncDefaultCall : t().partialCall(scoredCount);
+    reasonEl.textContent = scoredCount === 0 ? '' : t().partialReason;
+    return;
+  }
+
+  const rec = syncRecommendation(score);
+  banner.classList.add(rec.status);
+  callEl.textContent = rec.call;
+  reasonEl.textContent = rec.reason;
+}
+
+function resetForm(clearId) {
+  landmarkIds.forEach(id => {
+    delete state[id];
+    const btnRow = document.getElementById('buttons-' + id);
+    [...btnRow.children].forEach(btn => btn.classList.remove('selected'));
+    const chip = document.getElementById('chip-' + id);
+    chip.textContent = '–';
+    chip.classList.add('empty');
+    const crit = document.getElementById('criterion-' + id);
+    crit.classList.remove('show');
+    crit.textContent = '';
+  });
+  updateGauge();
+  if (clearId) document.getElementById('animalId').value = '';
+}
+
+document.getElementById('resetBtn').addEventListener('click', () => resetForm(false));
+
+/* ---------- Saved records (browser local storage) ---------- */
+const STORAGE_KEY = 'buffaloBCSRecords';
+
+function loadRecords() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function persistRecords(records) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  } catch (e) {
+    console.error('Could not save records:', e);
+    alert(t().storageError);
+  }
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function renderRecords() {
+  const records = loadRecords();
+  const list = document.getElementById('recordsList');
+  list.innerHTML = '';
+
+  if (records.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'records-empty';
+    empty.id = 'recordsEmpty';
+    empty.textContent = t().noRecords;
+    list.appendChild(empty);
+    return;
+  }
+
+  records.slice().reverse().forEach(rec => {
+    const item = document.createElement('div');
+    item.className = 'record-item';
+    item.innerHTML = `
+      <div class="record-main">
+        <div class="record-id">${escapeHtml(rec.animalId || t().unnamed)}</div>
+        <div class="record-meta">${escapeHtml(rec.date)} · ${rec.landmarkScores.join(' / ')}</div>
+      </div>
+      <span class="record-score-chip ${rec.status}">${rec.score.toFixed(2)}</span>
+      <button class="record-delete" data-recid="${rec.recId}" aria-label="Delete record">×</button>
+    `;
+    list.appendChild(item);
+  });
+
+  list.querySelectorAll('.record-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const records2 = loadRecords().filter(r => r.recId !== btn.getAttribute('data-recid'));
+      persistRecords(records2);
+      renderRecords();
+    });
+  });
+}
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const scored = landmarkIds.filter(id => state[id] !== undefined);
+  if (scored.length < 5) return;
+
+  const sum = landmarkIds.reduce((acc, id) => acc + state[id], 0);
+  const rounded = Math.round((sum / 5) * 4) / 4;
+  const rec = syncRecommendation(rounded);
+
+  const records = loadRecords();
+  records.push({
+    recId: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    animalId: document.getElementById('animalId').value.trim(),
+    date: new Date().toLocaleString(),
+    score: rounded,
+    status: rec.status,
+    call: rec.call,
+    landmarkScores: landmarkIds.map(id => state[id])
+  });
+  persistRecords(records);
+  renderRecords();
+  resetForm(true);
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  if (confirm(t().clearConfirm)) {
+    persistRecords([]);
+    renderRecords();
+  }
+});
+
+/* ---------- Export / backup / restore ---------- */
+function todayStamp() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function downloadBlob(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function toCSV(records) {
+  const header = ['Animal ID', 'Date', 'Tailhead', 'Hooks', 'Pins', 'Ribs', 'Spine', 'Overall BCS', 'Sync Status', 'Sync Recommendation'];
+  const escapeCSV = v => `"${String(v).replace(/"/g, '""')}"`;
+  const rows = records.map(r => [
+    r.animalId || 'Unnamed',
+    r.date,
+    ...r.landmarkScores,
+    r.score.toFixed(2),
+    r.status,
+    r.call
+  ]);
+  return [header, ...rows].map(row => row.map(escapeCSV).join(',')).join('\r\n');
+}
+
+document.getElementById('exportCsvBtn').addEventListener('click', () => {
+  const records = loadRecords();
+  if (records.length === 0) { alert(t().noExportRecords); return; }
+  downloadBlob(toCSV(records), `buffalo-bcs-records-${todayStamp()}.csv`, 'text/csv');
+});
+
+document.getElementById('exportJsonBtn').addEventListener('click', () => {
+  const records = loadRecords();
+  if (records.length === 0) { alert(t().noBackupRecords); return; }
+  downloadBlob(JSON.stringify(records, null, 2), `buffalo-bcs-backup-${todayStamp()}.json`, 'application/json');
+});
+
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const imported = JSON.parse(reader.result);
+      if (!Array.isArray(imported)) throw new Error('not an array');
+      const existing = loadRecords();
+      const existingIds = new Set(existing.map(r => r.recId));
+      const additions = imported.filter(r => r && r.recId && !existingIds.has(r.recId));
+      persistRecords(existing.concat(additions));
+      renderRecords();
+      alert(t().importSuccess(additions.length, imported.length - additions.length));
+    } catch (err) {
+      alert(t().importError);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ---------- Language switching ---------- */
+function applyLanguage() {
+  const T = t();
+  document.getElementById('eyebrowText').textContent = T.eyebrow;
+  document.getElementById('taglineText').textContent = T.tagline;
+  document.getElementById('languageLabel').textContent = currentLang === 'tl' ? 'Wika' : 'Language';
+  document.getElementById('animalIdLabel').childNodes[0].textContent = T.animalIdLabel + ' ';
+  document.getElementById('optionalTag').textContent = T.optional;
+  document.getElementById('animalId').placeholder = T.animalIdPlaceholder;
+  document.getElementById('gaugeLabel').textContent = T.gaugeLabel;
+  document.getElementById('gaugeDesc').textContent = T.gaugeDesc;
+  document.getElementById('syncLabel').textContent = T.syncLabel;
+  document.getElementById('saveBtn').textContent = T.saveRecordBtn;
+  document.getElementById('resetBtn').textContent = T.resetBtn;
+  document.getElementById('recordsTitle').textContent = T.savedRecordsTitle;
+  document.getElementById('clearAllBtn').textContent = T.clearAll;
+  document.getElementById('exportCsvBtn').textContent = T.exportCsv;
+  document.getElementById('exportJsonBtn').textContent = T.backupJson;
+  document.getElementById('restoreLabel').textContent = T.restoreBackup;
+  document.getElementById('disclaimerText').textContent = T.disclaimer;
+
+  buildLandmarkCards();
+  updateGauge();
+  renderRecords();
+}
+
+document.getElementById('langSelect').value = currentLang;
+document.getElementById('langSelect').addEventListener('change', (e) => {
+  currentLang = e.target.value;
+  localStorage.setItem(LANG_KEY, currentLang);
+  applyLanguage();
+});
+
+applyLanguage();
+</script>
+
+</body>
+</html>
